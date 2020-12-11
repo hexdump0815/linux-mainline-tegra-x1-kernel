@@ -1,0 +1,43 @@
+# name: -stb-txn + no auto
+
+cp /compile/doc/stable-tx/config.txn /compile/source/linux-stable-tx/.config
+cd /compile/source/linux-stable-tx
+
+# patches - none yet
+
+# git pull
+export ARCH=arm64
+# make defconfig + fix options - see misc.txn/options
+make oldconfig
+make -j 4 Image dtbs modules
+cd tools/perf
+make
+cd ../power/cpupower
+make
+cd ../../..
+export kver=`make kernelrelease`
+echo ${kver}
+# remove debug info if there and wanted
+# find . -type f -name '*.ko' | sudo xargs -n 1 objcopy --strip-unneeded
+make modules_install
+# make headers_install INSTALL_HDR_PATH=/usr
+cp -v .config /boot/config-${kver}
+# for rpi
+cp -v arch/arm64/boot/Image /boot/Image-${kver}
+# in case it is needed somewhere
+mkimage -A arm64 -O linux -T kernel -C none -a 0x1080000 -e 0x1080000 -n linux-${kver} -d arch/arm64/boot/Image /boot/uImage-${kver}
+mkdir -p /boot/tools-${kver}
+cp -v tools/perf/perf /boot/tools-${kver}
+cp -v tools/power/cpupower/cpupower /boot/tools-${kver}
+cp -v tools/power/cpupower/libcpupower.so.0.0.1 /boot/tools-${kver}/libcpupower.so.0
+mkdir /boot/dtb-${kver}
+cp -v arch/arm64/boot/dts/nvidia/*.dtb /boot/dtb-${kver}
+cp -v System.map /boot/System.map-${kver}
+cd /boot
+update-initramfs -c -k ${kver}
+mkimage -A arm64 -O linux -T ramdisk -a 0x0 -e 0x0 -n initrd.img-${kver} -d initrd.img-${kver} uInitrd-${kver}
+tar cvzf /compile/source/linux-stable-tx/${kver}.tar.gz /boot/*-${kver} /lib/modules/${kver}
+cp -v /compile/doc/stable-tx/config.txn /compile/doc/stable-tx/config.txn.old
+cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn
+cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn-${kver}
+cp -v /compile/source/linux-stable-tx/*.tar.gz /compile/result/stable-tx
