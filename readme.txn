@@ -1,9 +1,14 @@
-# name: -stb-txn + no auto
+# directories:
+# - /compile/doc/stable-tx - the files in this dir
+# - /compile/source/linux-stable-tx - the kernel sources checked out from gitrepo
+# - /compile/result/stable-tx - the resulting kernel, modules etc. tar.gz files
+# name: stb-txn
+
+# patches:
+# none so far
 
 cp /compile/doc/stable-tx/config.txn /compile/source/linux-stable-tx/.config
 cd /compile/source/linux-stable-tx
-
-# patches - none yet
 
 # git pull
 export ARCH=arm64
