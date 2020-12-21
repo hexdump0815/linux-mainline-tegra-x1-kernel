@@ -12,7 +12,9 @@ cd /compile/source/linux-stable-tx
 
 # git pull
 export ARCH=arm64
-# make defconfig + fix options - see misc.txn/options
+# make defconfig
+# /compile/doc/stable-tx/misc.txn/options/enable-docker-options.sh
+# /compile/doc/stable-tx/misc.txn/options/enable-additional-options.sh
 make oldconfig
 make -j 4 Image dtbs modules
 cd tools/perf
