@@ -5,16 +5,18 @@
 # name: stb-txn
 
 # patches:
-# none so far
+# add some thermal patches from v5.11 - thermal sensor is still failing
+patch -p1 < /compile/doc/stable-tx/misc.txn/patches/arm64-tegra-Add-missing-gpu-throt-level-to-tegra210-soctherm.patch
+patch -p1 < /compile/doc/stable-tx/misc.txn/patches/arm64-tegra-Add-missing-hot-temperatures-to-tegra210-thermal-zones.patch
+patch -p1 < /compile/doc/stable-tx/misc.txn/patches/thermal-tegra-Avoid-setting-edp_irq-when-not-relevant.patch
 
 cp /compile/doc/stable-tx/config.txn /compile/source/linux-stable-tx/.config
 cd /compile/source/linux-stable-tx
 
-# git pull
 export ARCH=arm64
-# make defconfig
-# /compile/doc/stable-tx/misc.txn/options/enable-docker-options.sh
-# /compile/doc/stable-tx/misc.txn/options/enable-additional-options.sh
+# a hand crafted config is used for now, so no make defconfig
+/compile/doc/stable-tx/misc.txn/options/enable-docker-options.sh
+/compile/doc/stable-tx/misc.txn/options/enable-additional-options.sh
 make oldconfig
 make -j 4 Image dtbs modules
 cd tools/perf
