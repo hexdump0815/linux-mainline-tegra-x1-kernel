@@ -50,3 +50,30 @@ cp -v /compile/doc/stable-tx/config.txn /compile/doc/stable-tx/config.txn.old
 cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn
 cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn-${kver}
 cp -v /compile/source/linux-stable-tx/*.tar.gz /compile/result/stable-tx
+
+
+# extlinux.conf
+TIMEOUT 30
+
+DEFAULT v51025
+
+MENU TITLE nano boot options
+
+LABEL v51025
+      MENU LABEL v5.10.25 kernel
+      LINUX ../Image-5.10.25-stb-txn
+      INITRD ../uInitrd
+      FDT ../dtb-5.10.25-stb-txn/tegra210-p3450-0000.dtb
+      APPEND console=tty0 root=LABEL=root rootwait ro fsck.fix=yes fsck.repair=yes net.ifnames=0 ipv6.disable=1 noresume nouveau.modeset=1
+
+
+# some notes about getting the open source nouveau gpu driver working:
+# see also: https://gitlab.freedesktop.org/mesa/mesa/-/issues/3505
+# - a xorg server built from the latest sources is required (tested with sources from 04/2021)
+# - a recent mesa might be required (not sure about this, tested with 21.0.1)
+# - kernel cmdline nouveau.modeset=1 is required
+# - performance is quite low due to low default gpu clock frequency
+# - gpu clock frequency can be changed via /sys/kernel/debug/dri/128/pstate
+#   - trying to do so can easily hang the system (maybe power supply issue? 5.1v/3a)
+# - glmark2 is running well, but with some tiny artifacts here and there
+# - a wayfire/wayland session seems to work, but with visual artifacts when scrolling in a terminal etc.
