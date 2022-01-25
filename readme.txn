@@ -1,23 +1,18 @@
 # directories:
 # - /compile/doc/stable-tx - the files in this dir
-# - /compile/source/linux-stable-tx - the kernel sources checked out from gitrepo
+# - /compile/source/linux-stable-txn - the kernel sources checked out from gitrepo
 # - /compile/result/stable-tx - the resulting kernel, modules etc. tar.gz files
+# - /compile/doc/kernel-config-options - https://github.com/hexdump0815/kernel-config-options
 # name: stb-txn
 
-# patches:
-# add some thermal patches from v5.11 - thermal sensor is still failing
-patch -p1 < /compile/doc/stable-tx/misc.txn/patches/arm64-tegra-Add-missing-gpu-throt-level-to-tegra210-soctherm.patch
-patch -p1 < /compile/doc/stable-tx/misc.txn/patches/arm64-tegra-Add-missing-hot-temperatures-to-tegra210-thermal-zones.patch
-patch -p1 < /compile/doc/stable-tx/misc.txn/patches/thermal-tegra-Avoid-setting-edp_irq-when-not-relevant.patch
+cd /compile/source/linux-stable-txn
 
-cp /compile/doc/stable-tx/config.txn /compile/source/linux-stable-tx/.config
-cd /compile/source/linux-stable-tx
+# patches: none so far
 
 export ARCH=arm64
-# a hand crafted config is used for now, so no make defconfig
-/compile/doc/stable-tx/misc.txn/options/enable-docker-options.sh
-/compile/doc/stable-tx/misc.txn/options/enable-additional-options.sh
-make oldconfig
+scripts/kconfig/merge_config.sh -m arch/arm64/configs/defconfig /compile/doc/kernel-config-options/docker-options.cfg /compile/doc/kernel-config-options/options-to-remove-generic.cfg /compile/doc/stable-tx/misc.txn/options/options-to-remove-special.cfg /compile/doc/kernel-config-options/additional-options-generic.cfg /compile/doc/kernel-config-options/additional-options-aarch64.cfg /compile/doc/stable-tx/misc.txn/options/additional-options-special.cfg
+( cd /compile/doc/kernel-config-options ; git rev-parse --verify HEAD ) > /compile/doc/stable-tx/misc.txn/options/kernel-config-options.version
+make olddefconfig
 make -j 4 Image dtbs modules
 cd tools/perf
 make
@@ -38,34 +33,33 @@ cp -v .config /boot/config-${kver}
 # for rpi
 cp -v arch/arm64/boot/Image /boot/Image-${kver}
 # in case it is needed somewhere
-mkimage -A arm64 -O linux -T kernel -C none -a 0x1080000 -e 0x1080000 -n linux-${kver} -d arch/arm64/boot/Image /boot/uImage-${kver}
+#mkimage -A arm64 -O linux -T kernel -C none -a 0x1080000 -e 0x1080000 -n linux-${kver} -d arch/arm64/boot/Image /boot/uImage-${kver}
 mkdir /boot/dtb-${kver}
 cp -v arch/arm64/boot/dts/nvidia/*.dtb /boot/dtb-${kver}
 cp -v System.map /boot/System.map-${kver}
 cd /boot
 update-initramfs -c -k ${kver}
-mkimage -A arm64 -O linux -T ramdisk -a 0x0 -e 0x0 -n initrd.img-${kver} -d initrd.img-${kver} uInitrd-${kver}
-tar cvzf /compile/source/linux-stable-tx/${kver}.tar.gz /boot/*-${kver} /lib/modules/${kver}
+#mkimage -A arm64 -O linux -T ramdisk -a 0x0 -e 0x0 -n initrd.img-${kver} -d initrd.img-${kver} uInitrd-${kver}
+tar cvzf /compile/source/linux-stable-txn/${kver}.tar.gz /boot/*-${kver} /lib/modules/${kver}
 cp -v /compile/doc/stable-tx/config.txn /compile/doc/stable-tx/config.txn.old
-cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn
-cp -v /compile/source/linux-stable-tx/.config /compile/doc/stable-tx/config.txn-${kver}
-cp -v /compile/source/linux-stable-tx/*.tar.gz /compile/result/stable-tx
+cp -v /compile/source/linux-stable-txn/.config /compile/doc/stable-tx/config.txn
+cp -v /compile/source/linux-stable-txn/.config /compile/doc/stable-tx/config.txn-${kver}
+cp -v /compile/source/linux-stable-txn/*.tar.gz /compile/result/stable-tx
 
 
 # extlinux.conf
 TIMEOUT 30
 
-DEFAULT v51025
+DEFAULT v5162
 
 MENU TITLE nano boot options
 
-LABEL v51025
-      MENU LABEL v5.10.25 kernel
-      LINUX ../Image-5.10.25-stb-txn
-      INITRD ../uInitrd
-      FDT ../dtb-5.10.25-stb-txn/tegra210-p3450-0000.dtb
-      APPEND console=tty0 root=LABEL=root rootwait ro fsck.fix=yes fsck.repair=yes net.ifnames=0 ipv6.disable=1 noresume nouveau.modeset=1
-
+LABEL v5162
+      MENU LABEL linux v5.16.2
+      LINUX ../Image-5.16.2-stb-txn
+      INITRD ../initrd.img-5.16.2-stb-txn
+      FDT ../dtb-5.16.2-stb-txn/tegra210-p3450-0000.dtb
+      APPEND console=ttyS0,115200n8 console=tty0 root=LABEL=root rootwait ro fsck.fix=yes fsck.repair=yes net.ifnames=0 ipv6.disable=1 noresume loglevel=8
 
 # some notes about getting the open source nouveau gpu driver working:
 # see also: https://gitlab.freedesktop.org/mesa/mesa/-/issues/3505
